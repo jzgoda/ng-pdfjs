@@ -24,7 +24,7 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     PDFJS.disableWorker = true;
-    PDFJS.getDocument('./assets/tes.pdf').then(
+    PDFJS.getDocument('./assets/test.pdf').then(
       (pdf: PDFDocumentProxy) => {
         pdf.getPage(1).then(page => {
           const scale = 1;
