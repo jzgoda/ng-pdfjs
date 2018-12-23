@@ -26,30 +26,38 @@ export class AppComponent implements OnInit {
     PDFJS.disableWorker = true;
     PDFJS.getDocument('./assets/test.pdf').then(
       (pdf: PDFDocumentProxy) => {
-        pdf.getPage(1).then(page => {
-          const scale = 1;
-          const viewport: PDFPageViewport = page.getViewport(scale);
+        pdf.getPage(1).then(
+          page => {
+            const scale = 1;
+            const viewport: PDFPageViewport = page.getViewport(scale);
 
-          const canvas: HTMLCanvasElement = document.createElement('canvas');
-          canvas.height = viewport.height;
-          canvas.width = viewport.width;
+            const canvas: HTMLCanvasElement = document.createElement('canvas');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
 
-          const context: CanvasRenderingContext2D = canvas.getContext('2d');
-          const task: PDFRenderTask = page.render({
-            canvasContext: context,
-            viewport: viewport,
-          });
-          task.then(() => {
-            this.imgWidth = canvas.width;
-            this.imgHeight = canvas.height;
-            this.imgSrc = canvas.toDataURL();
-          });
-        });
+            const context: CanvasRenderingContext2D = canvas.getContext('2d');
+            const task: PDFRenderTask = page.render({
+              canvasContext: context,
+              viewport: viewport,
+            });
+            task.then(
+              () => {
+                this.imgWidth = canvas.width;
+                this.imgHeight = canvas.height;
+                this.imgSrc = canvas.toDataURL();
+              },
+              error => this.processError(error)
+            );
+          },
+          error => this.processError(error)
+        );
       },
-      error => {
-        this.errorMessage = error;
-        console.log(error);
-      }
+      error => this.processError(error)
     );
+  }
+
+  processError(error: string): void {
+    this.errorMessage = error;
+    console.log(error);
   }
 }
