@@ -4,6 +4,7 @@ import {
   PDFPageViewport,
   PDFRenderTask,
   PDFDocumentProxy,
+  PDFPageProxy,
 } from 'pdfjs-dist';
 
 const PDFJS: PDFJSStatic = require('pdfjs-dist');
@@ -22,42 +23,52 @@ export class AppComponent implements OnInit {
   imgHeight: number;
   errorMessage: string;
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     PDFJS.disableWorker = true;
-    PDFJS.getDocument('./assets/test.pdf').then(
-      (pdf: PDFDocumentProxy) => {
-        pdf.getPage(1).then(
-          page => {
-            const scale = 1;
-            const viewport: PDFPageViewport = page.getViewport(scale);
-
-            const canvas: HTMLCanvasElement = document.createElement('canvas');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-
-            const context: CanvasRenderingContext2D = canvas.getContext('2d');
-            const task: PDFRenderTask = page.render({
-              canvasContext: context,
-              viewport: viewport,
-            });
-            task.then(
-              () => {
-                this.imgWidth = canvas.width;
-                this.imgHeight = canvas.height;
-                this.imgSrc = canvas.toDataURL();
-              },
-              error => this.processError(error)
-            );
-          },
-          error => this.processError(error)
-        );
-      },
-      error => this.processError(error)
-    );
+    try {
+      await this.showPDF();
+    } catch (error) {
+      this.errorMessage = error;
+      console.log(error);
+    }
   }
 
-  processError(error: string): void {
-    this.errorMessage = error;
-    console.log(error);
+  private async showPDF(): Promise<void> {
+    const page: PDFPageProxy = await this.getPage();
+    const viewport: PDFPageViewport = page.getViewport(1);
+    const canvas: HTMLCanvasElement = this.getCanvas(viewport);
+    await this.createRenderTask(page, canvas, viewport);
+    this.setDisplayValues(canvas);
+  }
+
+  private async getPage(): Promise<PDFPageProxy> {
+    const pdf: PDFDocumentProxy = await PDFJS.getDocument('./assets/test.pdf');
+    return await pdf.getPage(1);
+  }
+
+  private getCanvas(viewport: PDFPageViewport): HTMLCanvasElement {
+    const canvas: HTMLCanvasElement = document.createElement('canvas');
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+    return canvas;
+  }
+
+  private createRenderTask(
+    page: PDFPageProxy,
+    canvas: HTMLCanvasElement,
+    viewport: PDFPageViewport
+  ): PDFRenderTask {
+    const context: CanvasRenderingContext2D = canvas.getContext('2d');
+    const task: PDFRenderTask = page.render({
+      canvasContext: context,
+      viewport: viewport,
+    });
+    return task;
+  }
+
+  private setDisplayValues(canvas: HTMLCanvasElement): void {
+    this.imgWidth = canvas.width;
+    this.imgHeight = canvas.height;
+    this.imgSrc = canvas.toDataURL();
   }
 }
